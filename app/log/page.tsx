@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
+import SwipeToDelete from "@/components/SwipeToDelete";
 import { supabase } from "@/lib/supabaseClient";
 import { fmtDuration, sessionDurationMs } from "@/lib/data";
 
@@ -25,6 +26,16 @@ export default function LogPage() {
 function LogInner() {
   const [entries, setEntries] = useState<LogEntry[] | null>(null);
   const [activeWorkout, setActiveWorkout] = useState<{ id: string; routine_name: string } | null>(null);
+
+  const deleteWorkout = async (id: string) => {
+    if (!confirm("Delete this workout? This removes it from your log and stats permanently.")) return;
+    const { error } = await supabase.from("workouts").delete().eq("id", id);
+    if (error) {
+      alert("Could not delete: " + error.message);
+      return;
+    }
+    setEntries((prev) => (prev ? prev.filter((e) => e.id !== id) : prev));
+  };
 
   useEffect(() => {
     (async () => {
@@ -113,31 +124,33 @@ function LogInner() {
               {g.items.length} Workout{g.items.length === 1 ? "" : "s"}
             </span>
           </div>
-          <div className="bg-card border border-line rounded-2xl divide-y divide-line">
+          <div className="bg-card border border-line rounded-2xl divide-y divide-line overflow-hidden">
             {g.items.map((e) => {
               const d = new Date(e.started_at);
               return (
-                <div key={e.id} className="flex gap-4 p-4">
-                  <div className="w-12 shrink-0 text-center">
-                    <div className="text-[11px] text-dim bg-bg rounded-t-md pt-1">
-                      {d.toLocaleDateString(undefined, { weekday: "short" })}
+                <SwipeToDelete key={e.id} onDelete={() => deleteWorkout(e.id)}>
+                  <div className="flex gap-4 p-4">
+                    <div className="w-12 shrink-0 text-center">
+                      <div className="text-[11px] text-dim bg-bg rounded-t-md pt-1">
+                        {d.toLocaleDateString(undefined, { weekday: "short" })}
+                      </div>
+                      <div className="text-xl font-bold bg-bg rounded-b-md pb-1">{d.getDate()}</div>
                     </div>
-                    <div className="text-xl font-bold bg-bg rounded-b-md pb-1">{d.getDate()}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-baseline gap-2">
+                        <span className="font-bold truncate">{e.routine_name}</span>
+                        <span className="text-dim text-sm shrink-0">{fmtDuration(e.durationMs)}</span>
+                      </div>
+                      <div className="text-sm text-[#B9C0CB] leading-relaxed">
+                        {e.exercises.map((x, xi) => (
+                          <div key={xi}>
+                            {x.setCount}x {x.name}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline gap-2">
-                      <span className="font-bold truncate">{e.routine_name}</span>
-                      <span className="text-dim text-sm shrink-0">{fmtDuration(e.durationMs)}</span>
-                    </div>
-                    <div className="text-sm text-[#B9C0CB] leading-relaxed">
-                      {e.exercises.map((x) => (
-                        <div key={x.name + Math.random()}>
-                          {x.setCount}x {x.name}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                </SwipeToDelete>
               );
             })}
           </div>

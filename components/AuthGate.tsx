@@ -48,7 +48,7 @@ function Login() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="text-accent tracking-widest text-sm mb-1">▮▮▮</div>
-          <h1 className="text-2xl font-extrabold tracking-[0.2em]">REPCOUNT</h1>
+          <h1 className="text-2xl font-extrabold tracking-[0.2em]">NEXTREP</h1>
           <p className="text-dim text-sm mt-2">Progressive overload, tracked per set</p>
         </div>
         <div className="bg-card border border-line rounded-2xl p-5">

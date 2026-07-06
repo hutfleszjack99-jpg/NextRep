@@ -3,6 +3,7 @@
 create table if not exists user_settings (
   user_id uuid primary key references auth.users on delete cascade,
   rest_seconds int not null default 180,
+  rest_enabled boolean not null default true,
   bar_weight numeric not null default 45
 );
 
@@ -57,7 +58,7 @@ create table if not exists sets (
   workout_exercise_id uuid not null references workout_exercises on delete cascade,
   set_index int not null,
   weight numeric,
-  reps int,
+  reps numeric,
   completed_at timestamptz
 );
 

@@ -5,6 +5,22 @@ import Shell from "@/components/Shell";
 import ExercisePicker from "@/components/ExercisePicker";
 import { supabase } from "@/lib/supabaseClient";
 import type { Routine, RoutineExercise } from "@/lib/types";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 export default function RoutineDetailPage() {
   return (
@@ -61,14 +77,26 @@ function RoutineDetail() {
     load();
   };
 
-  const move = async (idx: number, dir: -1 | 1) => {
-    const other = idx + dir;
-    if (other < 0 || other >= exercises.length) return;
-    const a = exercises[idx];
-    const b = exercises[other];
-    await supabase.from("routine_exercises").update({ position: other }).eq("id", a.id);
-    await supabase.from("routine_exercises").update({ position: idx }).eq("id", b.id);
-    load();
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }),
+    useSensor(KeyboardSensor)
+  );
+
+  const onDragEnd = async (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = exercises.findIndex((e) => e.id === active.id);
+    const newIndex = exercises.findIndex((e) => e.id === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const reordered = arrayMove(exercises, oldIndex, newIndex);
+    setExercises(reordered); // optimistic
+    // persist new positions
+    for (let i = 0; i < reordered.length; i++) {
+      if (reordered[i].position !== i) {
+        await supabase.from("routine_exercises").update({ position: i }).eq("id", reordered[i].id);
+      }
+    }
   };
 
   const saveName = async () => {
@@ -202,53 +230,29 @@ function RoutineDetail() {
         {starting ? "Starting…" : "Start this Workout"}
       </button>
 
-      <div className="bg-card border border-line rounded-2xl divide-y divide-line mb-4">
-        {exercises.map((rex, i) => (
-          <div key={rex.id} className="p-4">
-            <div className="flex justify-between items-start gap-2">
-              <div>
-                <div className="font-bold">{rex.exercise_name}</div>
-                <div className="text-[10px] uppercase tracking-wider text-dim mt-1.5">Sets</div>
-                <div className="flex items-center gap-2 mt-1">
-                  <button
-                    onClick={() => changeSets(rex, -1)}
-                    className="w-7 h-7 border border-line rounded-lg text-dim text-lg leading-none active:bg-white/5"
-                  >
-                    −
-                  </button>
-                  <span className="text-sm font-mono w-16 text-center">
-                    {rex.default_sets} set{rex.default_sets === 1 ? "" : "s"}
-                  </span>
-                  <button
-                    onClick={() => changeSets(rex, 1)}
-                    className="w-7 h-7 border border-line rounded-lg text-dim text-lg leading-none active:bg-white/5"
-                  >
-                    +
-                  </button>
-                </div>
-                {rex.note && <div className="text-accent/80 text-xs mt-1">Note: {rex.note}</div>}
-              </div>
-              <div className="flex gap-1 shrink-0">
-                <button onClick={() => move(i, -1)} className="w-8 h-8 border border-line rounded text-dim">
-                  ↑
-                </button>
-                <button onClick={() => move(i, 1)} className="w-8 h-8 border border-line rounded text-dim">
-                  ↓
-                </button>
-                <button
-                  onClick={() => removeExercise(rex)}
-                  className="w-8 h-8 border border-line rounded text-danger"
-                >
-                  −
-                </button>
-              </div>
-            </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={exercises.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+          <div className="bg-card border border-line rounded-2xl divide-y divide-line mb-4 overflow-hidden">
+            {exercises.map((rex) => (
+              <SortableExerciseRow
+                key={rex.id}
+                rex={rex}
+                onChangeSets={changeSets}
+                onRemove={removeExercise}
+              />
+            ))}
+            {exercises.length === 0 && (
+              <p className="text-dim text-sm p-4">No exercises yet. Add your first below.</p>
+            )}
           </div>
-        ))}
-        {exercises.length === 0 && (
-          <p className="text-dim text-sm p-4">No exercises yet. Add your first below.</p>
-        )}
-      </div>
+        </SortableContext>
+      </DndContext>
+
+      {exercises.length > 1 && (
+        <p className="text-dim text-xs mb-4 -mt-2 px-1">
+          Tip: press and hold the ⠿ handle to drag an exercise into a new order.
+        </p>
+      )}
 
       <button
         onClick={() => setPicking(true)}
@@ -263,6 +267,72 @@ function RoutineDetail() {
       </p>
 
       {picking && <ExercisePicker onPick={addExercise} onClose={() => setPicking(false)} />}
+    </div>
+  );
+}
+
+function SortableExerciseRow({
+  rex,
+  onChangeSets,
+  onRemove,
+}: {
+  rex: RoutineExercise;
+  onChangeSets: (rex: RoutineExercise, delta: number) => void;
+  onRemove: (rex: RoutineExercise) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: rex.id,
+  });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="p-4 bg-card">
+      <div className="flex justify-between items-start gap-2">
+        <div className="flex gap-3 items-start">
+          <button
+            {...attributes}
+            {...listeners}
+            className="text-dim text-xl leading-none mt-0.5 cursor-grab touch-none active:cursor-grabbing"
+            aria-label="Drag to reorder"
+          >
+            ⠿
+          </button>
+          <div>
+            <div className="font-bold">{rex.exercise_name}</div>
+            <div className="text-[10px] uppercase tracking-wider text-dim mt-1.5">Sets</div>
+            <div className="flex items-center gap-2 mt-1">
+              <button
+                onClick={() => onChangeSets(rex, -1)}
+                className="w-7 h-7 border border-line rounded-lg text-dim text-lg leading-none active:bg-white/5"
+              >
+                −
+              </button>
+              <span className="text-sm font-mono w-16 text-center">
+                {rex.default_sets} set{rex.default_sets === 1 ? "" : "s"}
+              </span>
+              <button
+                onClick={() => onChangeSets(rex, 1)}
+                className="w-7 h-7 border border-line rounded-lg text-dim text-lg leading-none active:bg-white/5"
+              >
+                +
+              </button>
+            </div>
+            {rex.note && <div className="text-accent/80 text-xs mt-1">Note: {rex.note}</div>}
+          </div>
+        </div>
+        <button
+          onClick={() => onRemove(rex)}
+          className="w-8 h-8 border border-line rounded text-danger shrink-0"
+          aria-label="Remove exercise"
+        >
+          −
+        </button>
+      </div>
     </div>
   );
 }
