@@ -1,0 +1,9 @@
+{
+  "name": "RepCount",
+  "short_name": "RepCount",
+  "start_url": "/log",
+  "display": "standalone",
+  "background_color": "#0B0C0E",
+  "theme_color": "#0B0C0E",
+  "icons": []
+}
