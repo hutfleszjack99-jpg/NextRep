@@ -3,8 +3,14 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "NextRep",
+  applicationName: "NextRep",
   description: "Progressive overload, tracked per set",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "NextRep",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
