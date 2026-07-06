@@ -33,7 +33,7 @@ function WorkoutInner() {
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [exs, setExs] = useState<ExState[]>([]);
   const [history, setHistory] = useState<Map<string, HistorySession[]>>(new Map());
-  const [settings, setSettings] = useState({ rest_seconds: 180, rest_enabled: true, bar_weight: 45 });
+  const [settings, setSettings] = useState({ rest_seconds: 180, bar_weight: 45 });
   const [restStart, setRestStart] = useState<number | null>(null);
   const [plateTarget, setPlateTarget] = useState<{ exIdx: number; setIdx: number } | null>(null);
   const [chartFor, setChartFor] = useState<ExState | null>(null);
@@ -84,7 +84,7 @@ function WorkoutInner() {
       if (uid) {
         const { data: s } = await supabase
           .from("user_settings")
-          .select("rest_seconds, rest_enabled, bar_weight")
+          .select("rest_seconds, bar_weight")
           .eq("user_id", uid)
           .maybeSingle();
         if (s) setSettings(s as any);
@@ -125,7 +125,7 @@ function WorkoutInner() {
     patchSet(exIdx, setIdx, { weight: (isNaN(num as any) ? null : num) as any });
   };
   const onRepsChange = (exIdx: number, setIdx: number, v: string) => {
-    const num = v === "" ? null : parseFloat(v);
+    const num = v === "" ? null : parseInt(v);
     patchSet(exIdx, setIdx, { reps: (isNaN(num as any) ? null : num) as any });
   };
 
@@ -143,7 +143,7 @@ function WorkoutInner() {
       const ts = new Date().toISOString();
       patchSet(exIdx, setIdx, { completed_at: ts });
       await saveSet(s, { completed_at: ts, weight: s.weight, reps: s.reps });
-      if (settings.rest_enabled) setRestStart(Date.now());
+      setRestStart(Date.now());
     }
   };
 
@@ -365,7 +365,7 @@ function WorkoutInner() {
 
                   <input
                     className="w-full bg-bg border border-line rounded-lg px-1 py-2 text-center font-mono"
-                    inputMode="decimal"
+                    inputMode="numeric"
                     placeholder={prev ? String(prev.reps) : "0"}
                     value={s.reps ?? ""}
                     onChange={(e) => onRepsChange(exIdx, setIdx, e.target.value)}
