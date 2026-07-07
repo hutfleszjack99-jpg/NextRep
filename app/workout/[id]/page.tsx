@@ -33,11 +33,13 @@ function WorkoutInner() {
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [exs, setExs] = useState<ExState[]>([]);
   const [history, setHistory] = useState<Map<string, HistorySession[]>>(new Map());
-  const [settings, setSettings] = useState({ rest_seconds: 180, bar_weight: 45 });
+  const [settings, setSettings] = useState({ rest_seconds: 180, rest_enabled: true, bar_weight: 45 });
   const [restStart, setRestStart] = useState<number | null>(null);
   const [plateTarget, setPlateTarget] = useState<{ exIdx: number; setIdx: number } | null>(null);
   const [chartFor, setChartFor] = useState<ExState | null>(null);
   const [now, setNow] = useState(Date.now());
+  // raw text being typed, keyed "setId:weight" / "setId:reps", so decimals like "8." survive
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
   const noteTimers = useRef<Record<string, any>>({});
 
   useEffect(() => {
@@ -84,7 +86,7 @@ function WorkoutInner() {
       if (uid) {
         const { data: s } = await supabase
           .from("user_settings")
-          .select("rest_seconds, bar_weight")
+          .select("rest_seconds, rest_enabled, bar_weight")
           .eq("user_id", uid)
           .maybeSingle();
         if (s) setSettings(s as any);
@@ -120,13 +122,43 @@ function WorkoutInner() {
     await supabase.from("sets").update(patch).eq("id", set.id);
   };
 
-  const onWeightChange = (exIdx: number, setIdx: number, v: string) => {
-    const num = v === "" ? null : Number(v);
-    patchSet(exIdx, setIdx, { weight: (isNaN(num as any) ? null : num) as any });
+  // sanitize to a valid decimal-in-progress: digits and a single dot
+  const cleanDecimal = (v: string) => {
+    let s = v.replace(/[^0-9.]/g, "");
+    const firstDot = s.indexOf(".");
+    if (firstDot !== -1) {
+      s = s.slice(0, firstDot + 1) + s.slice(firstDot + 1).replace(/\./g, "");
+    }
+    return s;
   };
-  const onRepsChange = (exIdx: number, setIdx: number, v: string) => {
-    const num = v === "" ? null : parseInt(v);
-    patchSet(exIdx, setIdx, { reps: (isNaN(num as any) ? null : num) as any });
+
+  const onWeightChange = (setId: string, v: string) => {
+    setDrafts((d) => ({ ...d, [`${setId}:weight`]: cleanDecimal(v) }));
+  };
+  const onRepsChange = (setId: string, v: string) => {
+    setDrafts((d) => ({ ...d, [`${setId}:reps`]: cleanDecimal(v) }));
+  };
+
+  // commit a field's draft text to a real number on blur
+  const commitField = async (exIdx: number, setIdx: number, field: "weight" | "reps") => {
+    const s = exs[exIdx]?.sets[setIdx];
+    if (!s) return;
+    const key = `${s.id}:${field}`;
+    const raw = drafts[key];
+    if (raw === undefined) return; // nothing typed
+    const num = raw === "" || raw === "." ? null : parseFloat(raw);
+    const value = (num === null || isNaN(num) ? null : num) as any;
+    patchSet(exIdx, setIdx, { [field]: value } as any);
+    setDrafts((d) => {
+      const n = { ...d };
+      delete n[key];
+      return n;
+    });
+    await supabase.from("sets").update({ [field]: value }).eq("id", s.id);
+    // rest timer starts when you enter reps for a set (if enabled)
+    if (field === "reps" && value != null && settings.rest_enabled) {
+      setRestStart(Date.now());
+    }
   };
 
   const persistSet = (exIdx: number, setIdx: number) => {
@@ -143,7 +175,6 @@ function WorkoutInner() {
       const ts = new Date().toISOString();
       patchSet(exIdx, setIdx, { completed_at: ts });
       await saveSet(s, { completed_at: ts, weight: s.weight, reps: s.reps });
-      setRestStart(Date.now());
     }
   };
 
@@ -350,9 +381,9 @@ function WorkoutInner() {
                       className="w-full bg-bg border border-line rounded-lg px-1 py-2 text-center font-mono"
                       inputMode="decimal"
                       placeholder={prev ? String(prev.weight) : "0"}
-                      value={s.weight ?? ""}
-                      onChange={(e) => onWeightChange(exIdx, setIdx, e.target.value)}
-                      onBlur={() => persistSet(exIdx, setIdx)}
+                      value={drafts[`${s.id}:weight`] ?? (s.weight ?? "")}
+                      onChange={(e) => onWeightChange(s.id, e.target.value)}
+                      onBlur={() => commitField(exIdx, setIdx, "weight")}
                     />
                     <button
                       onClick={() => setPlateTarget({ exIdx, setIdx })}
@@ -365,11 +396,11 @@ function WorkoutInner() {
 
                   <input
                     className="w-full bg-bg border border-line rounded-lg px-1 py-2 text-center font-mono"
-                    inputMode="numeric"
+                    inputMode="decimal"
                     placeholder={prev ? String(prev.reps) : "0"}
-                    value={s.reps ?? ""}
-                    onChange={(e) => onRepsChange(exIdx, setIdx, e.target.value)}
-                    onBlur={() => persistSet(exIdx, setIdx)}
+                    value={drafts[`${s.id}:reps`] ?? (s.reps ?? "")}
+                    onChange={(e) => onRepsChange(s.id, e.target.value)}
+                    onBlur={() => commitField(exIdx, setIdx, "reps")}
                   />
 
                   <div className="text-[11px] font-mono leading-tight">
@@ -433,9 +464,16 @@ function WorkoutInner() {
         <PlateCalculator
           barWeight={settings.bar_weight}
           onClose={() => setPlateTarget(null)}
-          onApply={(total) => {
-            onWeightChange(plateTarget.exIdx, plateTarget.setIdx, String(total));
-            setTimeout(() => persistSet(plateTarget.exIdx, plateTarget.setIdx), 50);
+          onApply={async (total) => {
+            const { exIdx, setIdx } = plateTarget;
+            const s = exs[exIdx]?.sets[setIdx];
+            patchSet(exIdx, setIdx, { weight: total as any });
+            setDrafts((d) => {
+              const n = { ...d };
+              if (s) delete n[`${s.id}:weight`];
+              return n;
+            });
+            if (s) await supabase.from("sets").update({ weight: total }).eq("id", s.id);
             setPlateTarget(null);
           }}
         />

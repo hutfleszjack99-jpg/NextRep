@@ -14,9 +14,10 @@ export default function RestTimerBar({
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
+    setNow(Date.now()); // restart the clock whenever a new set kicks off the timer
     const t = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(t);
-  }, []);
+  }, [startedAt]);
 
   const elapsed = (now - startedAt) / 1000;
   const remaining = restSeconds - elapsed;

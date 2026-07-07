@@ -26,7 +26,7 @@ export async function loadHistory(
     if (excludeWorkoutId && row.workout_id === excludeWorkoutId) continue;
     const rexId = row.routine_exercise_id as string;
     const sets = ((row.sets || []) as any[])
-      .filter((s) => s.weight != null && s.reps != null && s.completed_at != null)
+      .filter((s) => s.weight != null && s.reps != null)
       .sort((a, b) => a.set_index - b.set_index)
       .map((s) => ({ set_index: s.set_index, weight: Number(s.weight), reps: Number(s.reps) }));
     if (!sets.length) continue;

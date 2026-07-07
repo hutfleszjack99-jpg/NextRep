@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Shell from "@/components/Shell";
 import SwipeToDelete from "@/components/SwipeToDelete";
 import { supabase } from "@/lib/supabaseClient";
@@ -24,6 +25,7 @@ export default function LogPage() {
 }
 
 function LogInner() {
+  const router = useRouter();
   const [entries, setEntries] = useState<LogEntry[] | null>(null);
   const [activeWorkout, setActiveWorkout] = useState<{ id: string; routine_name: string } | null>(null);
 
@@ -60,11 +62,13 @@ function LogInner() {
         const exercises = (w.workout_exercises || [])
           .sort((a: any, b: any) => a.position - b.position)
           .map((e: any) => {
-            const done = (e.sets || []).filter(
-              (s: any) => s.completed_at && s.weight != null && s.reps != null
+            const logged = (e.sets || []).filter(
+              (s: any) => s.weight != null && s.reps != null
             );
-            done.forEach((s: any) => completedTimes.push(s.completed_at));
-            return { name: e.exercise_name, setCount: done.length };
+            logged.forEach((s: any) => {
+              if (s.completed_at) completedTimes.push(s.completed_at);
+            });
+            return { name: e.exercise_name, setCount: logged.length };
           })
           .filter((e: any) => e.setCount > 0);
         return {
@@ -129,7 +133,10 @@ function LogInner() {
               const d = new Date(e.started_at);
               return (
                 <SwipeToDelete key={e.id} onDelete={() => deleteWorkout(e.id)}>
-                  <div className="flex gap-4 p-4">
+                  <button
+                    onClick={() => router.push(`/log/${e.id}`)}
+                    className="w-full text-left flex gap-4 p-4 active:bg-white/5"
+                  >
                     <div className="w-12 shrink-0 text-center">
                       <div className="text-[11px] text-dim bg-bg rounded-t-md pt-1">
                         {d.toLocaleDateString(undefined, { weekday: "short" })}
@@ -148,8 +155,9 @@ function LogInner() {
                           </div>
                         ))}
                       </div>
+                      <div className="text-dim text-xs mt-1">Tap to view ›</div>
                     </div>
-                  </div>
+                  </button>
                 </SwipeToDelete>
               );
             })}
