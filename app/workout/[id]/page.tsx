@@ -34,7 +34,9 @@ function WorkoutInner() {
   const [exs, setExs] = useState<ExState[]>([]);
   const [history, setHistory] = useState<Map<string, HistorySession[]>>(new Map());
   const [settings, setSettings] = useState({ rest_seconds: 180, rest_enabled: true, bar_weight: 45 });
-  const [restStart, setRestStart] = useState<number | null>(null);
+  const [restTimer, setRestTimer] = useState<{ exIdx: number; afterSetIdx: number; at: number } | null>(
+    null
+  );
   const [plateTarget, setPlateTarget] = useState<{ exIdx: number; setIdx: number } | null>(null);
   const [chartFor, setChartFor] = useState<ExState | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -155,9 +157,12 @@ function WorkoutInner() {
       return n;
     });
     await supabase.from("sets").update({ [field]: value }).eq("id", s.id);
-    // rest timer starts when you enter reps for a set (if enabled)
+    // rest timer starts when you enter reps for a set (if enabled and a next set exists)
     if (field === "reps" && value != null && settings.rest_enabled) {
-      setRestStart(Date.now());
+      const hasNext = setIdx + 1 < exs[exIdx].sets.length;
+      if (hasNext) {
+        setRestTimer({ exIdx, afterSetIdx: setIdx, at: Date.now() });
+      }
     }
   };
 
@@ -359,9 +364,11 @@ function WorkoutInner() {
                 s.reps != null &&
                 (s.weight > pr.weight || (s.weight === pr.weight && s.reps > pr.reps));
               const isFirstPR = !pr && s.weight != null && s.reps != null && s.completed_at;
+              const showTimerHere =
+                restTimer && restTimer.exIdx === exIdx && restTimer.afterSetIdx === setIdx;
               return (
+                <div key={s.id}>
                 <div
-                  key={s.id}
                   className="grid grid-cols-[28px_1fr_1fr_1.2fr_28px] gap-2 items-center mb-2"
                 >
                   <button
@@ -429,6 +436,14 @@ function WorkoutInner() {
                     −
                   </button>
                 </div>
+                {showTimerHere && (
+                  <RestTimerBar
+                    startedAt={restTimer!.at}
+                    restSeconds={settings.rest_seconds}
+                    onDismiss={() => setRestTimer(null)}
+                  />
+                )}
+                </div>
               );
             })}
 
@@ -451,14 +466,6 @@ function WorkoutInner() {
           </div>
         );
       })}
-
-      {restStart !== null && (
-        <RestTimerBar
-          startedAt={restStart}
-          restSeconds={settings.rest_seconds}
-          onDismiss={() => setRestStart(null)}
-        />
-      )}
 
       {plateTarget && (
         <PlateCalculator
