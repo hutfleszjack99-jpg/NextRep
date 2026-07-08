@@ -55,11 +55,11 @@ function StatsInner() {
         const times: string[] = [];
         for (const e of w.workout_exercises || []) {
           for (const s of e.sets || []) {
-            if (s.completed_at && s.weight != null && s.reps != null) {
+            if (s.weight != null && s.reps != null) {
               volume += Number(s.weight) * Number(s.reps);
               setCount += 1;
               repCount += Number(s.reps);
-              times.push(s.completed_at);
+              if (s.completed_at) times.push(s.completed_at);
             }
           }
         }
