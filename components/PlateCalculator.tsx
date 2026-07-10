@@ -35,7 +35,7 @@ export default function PlateCalculator({
             type="checkbox"
             checked={includeBar}
             onChange={(e) => setIncludeBar(e.target.checked)}
-            className="accent-[#53DDE3]"
+            className="accent-[#C9C0F5]"
           />
           Include bar ({barWeight} lb)
         </label>
@@ -62,7 +62,7 @@ export default function PlateCalculator({
         <div className="font-mono font-bold text-accent text-lg my-3">Total: {total} lb</div>
         <div className="flex gap-2">
           <button
-            className="flex-1 bg-accent text-black font-bold rounded-lg py-3"
+            className="flex-1 bg-accent text-accentText font-bold rounded-lg py-3"
             onClick={() => onApply(total)}
           >
             Use {total}

@@ -202,7 +202,7 @@ function LogDetail() {
             <button
               onClick={save}
               disabled={saving}
-              className="bg-accent text-black font-bold rounded-lg px-4 py-1.5 text-sm disabled:opacity-60"
+              className="bg-accent text-accentText font-bold rounded-lg px-4 py-1.5 text-sm disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save"}
             </button>

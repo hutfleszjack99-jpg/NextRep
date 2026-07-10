@@ -72,7 +72,7 @@ export default function ExercisePicker({
                 key={g}
                 onClick={() => setGroup(g)}
                 className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-semibold border ${
-                  g === group ? "bg-accent text-black border-accent" : "border-line text-dim"
+                  g === group ? "bg-accent text-accentText border-accent" : "border-line text-dim"
                 }`}
               >
                 {g}
@@ -104,7 +104,7 @@ export default function ExercisePicker({
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addCustom()}
             />
-            <button onClick={addCustom} className="bg-accent text-black font-bold rounded-lg px-4">
+            <button onClick={addCustom} className="bg-accent text-accentText font-bold rounded-lg px-4">
               Add
             </button>
           </div>

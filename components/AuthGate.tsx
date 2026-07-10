@@ -55,13 +55,13 @@ function Login() {
           <div className="flex gap-2 mb-4">
             <button
               onClick={() => setMode("signin")}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold ${mode === "signin" ? "bg-accent text-black" : "text-dim"}`}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold ${mode === "signin" ? "bg-accent text-accentText" : "text-dim"}`}
             >
               Sign in
             </button>
             <button
               onClick={() => setMode("signup")}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold ${mode === "signup" ? "bg-accent text-black" : "text-dim"}`}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold ${mode === "signup" ? "bg-accent text-accentText" : "text-dim"}`}
             >
               Create account
             </button>
@@ -84,7 +84,7 @@ function Login() {
           <button
             onClick={submit}
             disabled={busy || !email || !password}
-            className="w-full bg-accent text-black font-bold rounded-lg py-3 disabled:opacity-50"
+            className="w-full bg-accent text-accentText font-bold rounded-lg py-3 disabled:opacity-50"
           >
             {busy ? "Working…" : mode === "signin" ? "Sign in" : "Create account"}
           </button>

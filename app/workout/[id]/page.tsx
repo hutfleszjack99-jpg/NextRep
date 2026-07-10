@@ -318,7 +318,7 @@ function WorkoutInner() {
     <div className="pb-28">
       {/* header */}
       <div className="flex justify-between items-center mb-4">
-        <button onClick={finish} className="bg-accent text-black font-bold rounded-full px-5 py-2">
+        <button onClick={finish} className="bg-accent text-accentText font-bold rounded-full px-5 py-2">
           Finish
         </button>
         <div className="text-center">
@@ -569,13 +569,13 @@ function ExerciseChartModal({
           <div className="h-52">
             <ResponsiveContainer>
               <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke="#26282E" vertical={false} />
-                <XAxis dataKey="date" stroke="#8A919E" fontSize={11} tickLine={false} />
-                <YAxis stroke="#8A919E" fontSize={11} tickLine={false} />
+                <CartesianGrid stroke="#282A34" vertical={false} />
+                <XAxis dataKey="date" stroke="#8A8798" fontSize={11} tickLine={false} />
+                <YAxis stroke="#8A8798" fontSize={11} tickLine={false} />
                 <Tooltip
                   contentStyle={{
-                    background: "#17181C",
-                    border: "1px solid #26282E",
+                    background: "#17181F",
+                    border: "1px solid #282A34",
                     borderRadius: 8,
                     fontSize: 12,
                   }}
@@ -584,9 +584,9 @@ function ExerciseChartModal({
                   type="monotone"
                   dataKey="top"
                   name="Top weight (lb)"
-                  stroke="#53DDE3"
+                  stroke="#C9C0F5"
                   strokeWidth={2.5}
-                  dot={{ r: 3, fill: "#53DDE3" }}
+                  dot={{ r: 3, fill: "#C9C0F5" }}
                 />
               </LineChart>
             </ResponsiveContainer>

@@ -139,7 +139,7 @@ function ProfileInner() {
         />
       </div>
 
-      <button onClick={save} className="w-full bg-accent text-black font-bold rounded-xl py-3 mb-3">
+      <button onClick={save} className="w-full bg-accent text-accentText font-bold rounded-xl py-3 mb-3">
         {saved ? "Saved ✓" : "Save settings"}
       </button>
 

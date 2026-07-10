@@ -58,7 +58,7 @@ function RoutinesInner() {
         </button>
         <button
           onClick={() => setCreating(true)}
-          className="w-9 h-9 bg-accent text-black rounded-full text-xl font-bold leading-none"
+          className="w-9 h-9 bg-accent text-accentText rounded-full text-xl font-bold leading-none"
         >
           +
         </button>
@@ -76,7 +76,7 @@ function RoutinesInner() {
             onKeyDown={(e) => e.key === "Enter" && create()}
           />
           <div className="flex gap-2">
-            <button onClick={create} className="flex-1 bg-accent text-black font-bold rounded-lg py-2.5">
+            <button onClick={create} className="flex-1 bg-accent text-accentText font-bold rounded-lg py-2.5">
               Create
             </button>
             <button

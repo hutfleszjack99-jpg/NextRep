@@ -143,18 +143,18 @@ function StatsInner() {
           <div className="h-40">
             <ResponsiveContainer>
               <LineChart data={overall.bodyweights} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke="#26282E" vertical={false} />
-                <XAxis dataKey="date" stroke="#8A919E" fontSize={11} tickLine={false} />
-                <YAxis stroke="#8A919E" fontSize={11} tickLine={false} domain={["auto", "auto"]} />
+                <CartesianGrid stroke="#282A34" vertical={false} />
+                <XAxis dataKey="date" stroke="#8A8798" fontSize={11} tickLine={false} />
+                <YAxis stroke="#8A8798" fontSize={11} tickLine={false} domain={["auto", "auto"]} />
                 <Tooltip
                   contentStyle={{
-                    background: "#17181C",
-                    border: "1px solid #26282E",
+                    background: "#17181F",
+                    border: "1px solid #282A34",
                     borderRadius: 8,
                     fontSize: 12,
                   }}
                 />
-                <Line type="monotone" dataKey="bw" name="lb" stroke="#3DDC84" strokeWidth={2} dot={{ r: 2.5 }} />
+                <Line type="monotone" dataKey="bw" name="lb" stroke="#C9C0F5" strokeWidth={2} dot={{ r: 2.5 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -188,13 +188,13 @@ function StatsInner() {
               <div className="h-48">
                 <ResponsiveContainer>
                   <LineChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                    <CartesianGrid stroke="#26282E" vertical={false} />
-                    <XAxis dataKey="date" stroke="#8A919E" fontSize={11} tickLine={false} />
-                    <YAxis stroke="#8A919E" fontSize={11} tickLine={false} />
+                    <CartesianGrid stroke="#282A34" vertical={false} />
+                    <XAxis dataKey="date" stroke="#8A8798" fontSize={11} tickLine={false} />
+                    <YAxis stroke="#8A8798" fontSize={11} tickLine={false} />
                     <Tooltip
                       contentStyle={{
-                        background: "#17181C",
-                        border: "1px solid #26282E",
+                        background: "#17181F",
+                        border: "1px solid #282A34",
                         borderRadius: 8,
                         fontSize: 12,
                       }}
@@ -203,9 +203,9 @@ function StatsInner() {
                       type="monotone"
                       dataKey="top"
                       name="Top weight (lb)"
-                      stroke="#53DDE3"
+                      stroke="#C9C0F5"
                       strokeWidth={2.5}
-                      dot={{ r: 3, fill: "#53DDE3" }}
+                      dot={{ r: 3, fill: "#C9C0F5" }}
                     />
                   </LineChart>
                 </ResponsiveContainer>

@@ -106,7 +106,7 @@ function LogInner() {
       {activeWorkout && (
         <Link
           href={`/workout/${activeWorkout.id}`}
-          className="block bg-accent text-black font-bold rounded-xl px-4 py-3 mb-5 text-center"
+          className="block bg-accent text-accentText font-bold rounded-xl px-4 py-3 mb-5 text-center"
         >
           Resume workout: {activeWorkout.routine_name}
         </Link>
@@ -148,7 +148,7 @@ function LogInner() {
                         <span className="font-bold truncate">{e.routine_name}</span>
                         <span className="text-dim text-sm shrink-0">{fmtDuration(e.durationMs)}</span>
                       </div>
-                      <div className="text-sm text-[#B9C0CB] leading-relaxed">
+                      <div className="text-sm text-[#A9A6B8] leading-relaxed">
                         {e.exercises.map((x, xi) => (
                           <div key={xi}>
                             {x.setCount}x {x.name}

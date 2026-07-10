@@ -214,7 +214,7 @@ function RoutineDetail() {
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && saveName()}
           />
-          <button onClick={saveName} className="bg-accent text-black font-bold rounded-lg px-4">
+          <button onClick={saveName} className="bg-accent text-accentText font-bold rounded-lg px-4">
             Save
           </button>
         </div>
