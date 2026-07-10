@@ -4,6 +4,7 @@ create table if not exists user_settings (
   user_id uuid primary key references auth.users on delete cascade,
   rest_seconds int not null default 180,
   rest_enabled boolean not null default true,
+  rest_sound_enabled boolean not null default false,
   bar_weight numeric not null default 45
 );
 

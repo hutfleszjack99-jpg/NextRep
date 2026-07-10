@@ -7,10 +7,12 @@ import { fmtClock } from "@/lib/data";
 export default function RestTimerBar({
   startedAt,
   restSeconds,
+  soundEnabled,
   onDismiss,
 }: {
   startedAt: number; // Date.now() when reps were entered
   restSeconds: number;
+  soundEnabled: boolean;
   onDismiss: () => void;
 }) {
   const [now, setNow] = useState(Date.now());
@@ -28,7 +30,8 @@ export default function RestTimerBar({
   const over = remaining <= 0;
   const pct = Math.max(0, Math.min(100, (remaining / restSeconds) * 100));
 
-  // vibrate once when it flips to ready (Android; silent no-op on iPhone)
+  // vibrate + optional beep once when it flips to ready
+  // (vibrate: Android only, silent on iPhone; beep: Safari may block if no recent gesture)
   useEffect(() => {
     if (over && !buzzed.current) {
       buzzed.current = true;
@@ -37,8 +40,32 @@ export default function RestTimerBar({
           (navigator as any).vibrate?.([120, 60, 120]);
         }
       } catch {}
+      if (soundEnabled) {
+        try {
+          const Ctor = (window as any).AudioContext || (window as any).webkitAudioContext;
+          if (!Ctor) return;
+          const ctx = new Ctor();
+          const beep = (startAt: number) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "sine";
+            osc.frequency.value = 880;
+            gain.gain.setValueAtTime(0, startAt);
+            gain.gain.linearRampToValueAtTime(0.2, startAt + 0.01);
+            gain.gain.setValueAtTime(0.2, startAt + 0.12);
+            gain.gain.linearRampToValueAtTime(0, startAt + 0.14);
+            osc.connect(gain).connect(ctx.destination);
+            osc.start(startAt);
+            osc.stop(startAt + 0.16);
+          };
+          const t0 = ctx.currentTime;
+          beep(t0);
+          beep(t0 + 0.22);
+          setTimeout(() => { try { ctx.close(); } catch {} }, 600);
+        } catch {}
+      }
     }
-  }, [over]);
+  }, [over, soundEnabled]);
 
   return (
     <div

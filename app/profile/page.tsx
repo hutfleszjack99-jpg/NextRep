@@ -17,6 +17,7 @@ function ProfileInner() {
   const [restSec, setRestSec] = useState("0");
   const [barWeight, setBarWeight] = useState("45");
   const [restEnabled, setRestEnabled] = useState(true);
+  const [restSoundEnabled, setRestSoundEnabled] = useState(false);
   const [saved, setSaved] = useState(false);
   const uidRef = useRef<string | null>(null);
 
@@ -29,7 +30,7 @@ function ProfileInner() {
       setEmail(user.email || "");
       const { data: s } = await supabase
         .from("user_settings")
-        .select("rest_seconds, rest_enabled, bar_weight")
+        .select("rest_seconds, rest_enabled, rest_sound_enabled, bar_weight")
         .eq("user_id", user.id)
         .maybeSingle();
       if (s) {
@@ -37,6 +38,7 @@ function ProfileInner() {
         setRestSec(String((s as any).rest_seconds % 60));
         setBarWeight(String((s as any).bar_weight));
         setRestEnabled((s as any).rest_enabled ?? true);
+        setRestSoundEnabled((s as any).rest_sound_enabled ?? false);
       }
     })();
   }, []);
@@ -50,7 +52,7 @@ function ProfileInner() {
     await supabase
       .from("user_settings")
       .upsert(
-        { user_id: uid, rest_seconds, bar_weight, rest_enabled: restEnabled },
+        { user_id: uid, rest_seconds, bar_weight, rest_enabled: restEnabled, rest_sound_enabled: restSoundEnabled },
         { onConflict: "user_id" }
       );
     setSaved(true);
@@ -90,22 +92,39 @@ function ProfileInner() {
             : "Off. No timer starts when you finish a set."}
         </p>
         {restEnabled && (
-          <div className="flex items-center gap-2">
-            <input
-              className="w-20 bg-bg border border-line rounded-lg px-3 py-2.5 text-center font-mono"
-              inputMode="numeric"
-              value={restMin}
-              onChange={(e) => setRestMin(e.target.value)}
-            />
-            <span className="text-dim text-sm">min</span>
-            <input
-              className="w-20 bg-bg border border-line rounded-lg px-3 py-2.5 text-center font-mono"
-              inputMode="numeric"
-              value={restSec}
-              onChange={(e) => setRestSec(e.target.value)}
-            />
-            <span className="text-dim text-sm">sec</span>
-          </div>
+          <>
+            <div className="flex items-center gap-2">
+              <input
+                className="w-20 bg-bg border border-line rounded-lg px-3 py-2.5 text-center font-mono"
+                inputMode="numeric"
+                value={restMin}
+                onChange={(e) => setRestMin(e.target.value)}
+              />
+              <span className="text-dim text-sm">min</span>
+              <input
+                className="w-20 bg-bg border border-line rounded-lg px-3 py-2.5 text-center font-mono"
+                inputMode="numeric"
+                value={restSec}
+                onChange={(e) => setRestSec(e.target.value)}
+              />
+              <span className="text-dim text-sm">sec</span>
+            </div>
+            <div className="mt-4 pt-3 border-t border-line flex items-center justify-between">
+              <div>
+                <div className="font-medium">Sound</div>
+                <div className="text-dim text-sm">Beep when the timer hits zero.</div>
+              </div>
+              <button
+                onClick={() => setRestSoundEnabled((v) => !v)}
+                className={`relative w-12 h-7 rounded-full transition-colors ${restSoundEnabled ? "bg-accent" : "bg-line"}`}
+                aria-label="Toggle rest timer sound"
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white transition-transform ${restSoundEnabled ? "translate-x-5" : ""}`}
+                />
+              </button>
+            </div>
+          </>
         )}
       </div>
 

@@ -33,7 +33,7 @@ function WorkoutInner() {
   const [workout, setWorkout] = useState<Workout | null>(null);
   const [exs, setExs] = useState<ExState[]>([]);
   const [history, setHistory] = useState<Map<string, HistorySession[]>>(new Map());
-  const [settings, setSettings] = useState({ rest_seconds: 180, rest_enabled: true, bar_weight: 45 });
+  const [settings, setSettings] = useState({ rest_seconds: 180, rest_enabled: true, rest_sound_enabled: false, bar_weight: 45 });
   const [restTimer, setRestTimer] = useState<{ exIdx: number; afterSetIdx: number; at: number } | null>(
     null
   );
@@ -116,7 +116,7 @@ function WorkoutInner() {
       if (uid) {
         const { data: s } = await supabase
           .from("user_settings")
-          .select("rest_seconds, rest_enabled, bar_weight")
+          .select("rest_seconds, rest_enabled, rest_sound_enabled, bar_weight")
           .eq("user_id", uid)
           .maybeSingle();
         if (s) setSettings(s as any);
@@ -474,6 +474,7 @@ function WorkoutInner() {
                   <RestTimerBar
                     startedAt={restTimer!.at}
                     restSeconds={settings.rest_seconds}
+                    soundEnabled={settings.rest_sound_enabled}
                     onDismiss={() => setRestTimer(null)}
                   />
                 )}

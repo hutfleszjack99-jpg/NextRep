@@ -43,6 +43,7 @@ export type SetRow = {
 export type Settings = {
   rest_seconds: number;
   rest_enabled: boolean;
+  rest_sound_enabled: boolean;
   bar_weight: number;
 };
 
