@@ -49,6 +49,34 @@ function WorkoutInner() {
     return () => clearInterval(t);
   }, []);
 
+  // Restore an in-progress rest timer when returning to this workout.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(`restTimer:${params.id}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // only restore if it hasn't been sitting stale for ages (10 min cap)
+        if (parsed && typeof parsed.at === "number" && Date.now() - parsed.at < 600000) {
+          setRestTimer(parsed);
+        } else {
+          sessionStorage.removeItem(`restTimer:${params.id}`);
+        }
+      }
+    } catch {}
+    // eslint-disable-next-line
+  }, [params.id]);
+
+  // Keep sessionStorage in sync so the timer survives leaving the page.
+  useEffect(() => {
+    try {
+      if (restTimer) {
+        sessionStorage.setItem(`restTimer:${params.id}`, JSON.stringify(restTimer));
+      } else {
+        sessionStorage.removeItem(`restTimer:${params.id}`);
+      }
+    } catch {}
+  }, [restTimer, params.id]);
+
   useEffect(() => {
     (async () => {
       const { data: w } = await supabase.from("workouts").select("*").eq("id", params.id).single();
@@ -252,8 +280,8 @@ function WorkoutInner() {
 
   const finish = async () => {
     if (!workout) return;
-    const anyDone = exs.some((e) => e.sets.some((s) => s.completed_at));
-    if (!anyDone && !confirm("No sets are marked done. Finish anyway?")) return;
+    const anyLogged = exs.some((e) => e.sets.some((s) => s.weight != null && s.reps != null));
+    if (!anyLogged && !confirm("No sets have weight and reps filled in. Finish anyway?")) return;
     // drop untouched empty sets to keep history clean
     for (const e of exs) {
       for (const s of e.sets) {
@@ -266,6 +294,9 @@ function WorkoutInner() {
       .from("workouts")
       .update({ finished_at: new Date().toISOString() })
       .eq("id", workout.id);
+    try {
+      sessionStorage.removeItem(`restTimer:${workout.id}`);
+    } catch {}
     router.push("/log");
   };
 
@@ -273,6 +304,9 @@ function WorkoutInner() {
     if (!workout) return;
     if (!confirm("Discard this workout entirely?")) return;
     await supabase.from("workouts").delete().eq("id", workout.id);
+    try {
+      sessionStorage.removeItem(`restTimer:${workout.id}`);
+    } catch {}
     router.push("/log");
   };
 
