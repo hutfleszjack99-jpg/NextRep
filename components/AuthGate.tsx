@@ -47,7 +47,14 @@ function Login() {
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="text-accent tracking-widest text-sm mb-1">▮▮▮</div>
+          <svg viewBox="0 0 120 120" className="w-16 h-16 mx-auto mb-3" aria-hidden="true">
+            <rect width="120" height="120" rx="26" fill="#17181F" />
+            <rect x="12" y="56" width="26" height="8" rx="2" fill="#4E4964" />
+            <rect x="40" y="50" width="6" height="20" rx="1.5" fill="#6E668F" />
+            <rect x="48" y="28" width="17" height="64" rx="3" fill="#C9C0F5" />
+            <rect x="69" y="28" width="17" height="64" rx="3" fill="#C9C0F5" />
+            <rect x="89" y="44" width="8" height="32" rx="2" fill="#C9C0F5" />
+          </svg>
           <h1 className="text-2xl font-extrabold tracking-[0.2em]">NEXTREP</h1>
           <p className="text-dim text-sm mt-2">Progressive overload, tracked per set</p>
         </div>
