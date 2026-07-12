@@ -178,13 +178,25 @@ function WorkoutInner() {
     if (raw === undefined) return; // nothing typed
     const num = raw === "" || raw === "." ? null : parseFloat(raw);
     const value = (num === null || isNaN(num) ? null : num) as any;
-    patchSet(exIdx, setIdx, { [field]: value } as any);
+
+    // Entering reps stamps the time. This is what makes duration accurate even if
+    // you never tap the checkmark. Clearing reps removes the stamp.
+    const patch: any = { [field]: value };
+    if (field === "reps") {
+      if (value != null && !s.completed_at) {
+        patch.completed_at = new Date().toISOString();
+      } else if (value == null && s.completed_at) {
+        patch.completed_at = null;
+      }
+    }
+
+    patchSet(exIdx, setIdx, patch);
     setDrafts((d) => {
       const n = { ...d };
       delete n[key];
       return n;
     });
-    await supabase.from("sets").update({ [field]: value }).eq("id", s.id);
+    await supabase.from("sets").update(patch).eq("id", s.id);
     // rest timer starts when you enter reps for a set (if enabled and a next set exists)
     if (field === "reps" && value != null && settings.rest_enabled) {
       const hasNext = setIdx + 1 < exs[exIdx].sets.length;

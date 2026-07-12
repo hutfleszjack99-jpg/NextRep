@@ -146,7 +146,7 @@ function LogInner() {
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-baseline gap-2">
                         <span className="font-bold truncate">{e.routine_name}</span>
-                        <span className="text-dim text-sm shrink-0">{fmtDuration(e.durationMs)}</span>
+                        <span className="text-dim text-sm shrink-0">{e.durationMs > 0 ? fmtDuration(e.durationMs) : "—"}</span>
                       </div>
                       <div className="text-sm text-[#A9A6B8] leading-relaxed">
                         {e.exercises.map((x, xi) => (

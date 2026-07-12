@@ -226,7 +226,7 @@ function LogDetail() {
 
       {!editing && (
         <div className="grid grid-cols-3 gap-3 mb-5">
-          <Stat label="Duration" value={fmtDuration(durationMs)} />
+          <Stat label="Duration" value={durationMs > 0 ? fmtDuration(durationMs) : "—"} />
           <Stat label="Sets" value={String(totalSets)} />
           <Stat label="Volume" value={`${Math.round(volume).toLocaleString()}`} />
         </div>

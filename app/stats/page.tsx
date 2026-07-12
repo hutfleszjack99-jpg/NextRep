@@ -48,7 +48,8 @@ function StatsInner() {
       let volume = 0,
         setCount = 0,
         repCount = 0,
-        durTotal = 0;
+        durTotal = 0,
+        durCount = 0;
       const bodyweights: { date: string; bw: number }[] = [];
       const rows = (data as any[]) || [];
       for (const w of rows) {
@@ -63,7 +64,11 @@ function StatsInner() {
             }
           }
         }
-        durTotal += sessionDurationMs(w.started_at, w.finished_at, times);
+        const dur = sessionDurationMs(w.started_at, w.finished_at, times);
+        if (dur > 0) {
+          durTotal += dur;
+          durCount += 1;
+        }
         if (w.bodyweight != null) {
           bodyweights.push({
             date: new Date(w.started_at).toLocaleDateString(undefined, {
@@ -76,7 +81,7 @@ function StatsInner() {
       }
       setOverall({
         workouts: rows.length,
-        avgDurationMs: rows.length ? durTotal / rows.length : 0,
+        avgDurationMs: durCount ? durTotal / durCount : 0,
         volume,
         sets: setCount,
         reps: repCount,
@@ -127,7 +132,7 @@ function StatsInner() {
 
       <div className="grid grid-cols-2 gap-3 mb-5">
         <Stat label="Workouts" value={String(overall.workouts)} />
-        <Stat label="Avg Duration" value={fmtDuration(overall.avgDurationMs)} />
+        <Stat label="Avg Duration" value={overall.avgDurationMs > 0 ? fmtDuration(overall.avgDurationMs) : "—"} />
         <Stat label="Total Volume" value={`${Math.round(overall.volume).toLocaleString()} lb`} />
         <Stat label="Total Sets" value={overall.sets.toLocaleString()} />
         <Stat label="Total Reps" value={overall.reps.toLocaleString()} />

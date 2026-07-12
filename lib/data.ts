@@ -76,11 +76,19 @@ export function fmtClock(totalSeconds: number): string {
 
 export function fmtDuration(ms: number): string {
   const mins = Math.max(0, Math.round(ms / 60000));
+  if (mins >= 60) {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m ? `${h}h ${m}m` : `${h}h`;
+  }
   return `${mins} min`;
 }
 
-// Session duration: first completed set to last completed set,
-// falling back to started/finished timestamps.
+// Session duration = first logged set to last logged set.
+// Sets are timestamped when you enter reps, so this works whether or not you
+// remembered to hit Finish. We deliberately do NOT fall back to
+// finishedAt - startedAt, because a workout left open for hours produces a
+// garbage number (that is where the 1800-minute sessions came from).
 export function sessionDurationMs(
   startedAt: string,
   finishedAt: string | null,
@@ -90,6 +98,7 @@ export function sessionDurationMs(
     const times = completedTimes.map((t) => new Date(t).getTime()).sort((a, b) => a - b);
     return times[times.length - 1] - times[0];
   }
-  if (finishedAt) return new Date(finishedAt).getTime() - new Date(startedAt).getTime();
+  // A single logged set means we have no span to measure.
+  // A workout with no timestamps at all is treated the same way.
   return 0;
 }
