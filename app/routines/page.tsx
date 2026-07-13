@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
+import BodyweightCard from "@/components/BodyweightCard";
 import { supabase } from "@/lib/supabaseClient";
 import type { Routine } from "@/lib/types";
 
@@ -64,6 +65,8 @@ function RoutinesInner() {
         </button>
       </div>
       <h1 className="text-3xl font-extrabold mb-4">Routines</h1>
+
+      <BodyweightCard />
 
       {creating && (
         <div className="bg-card border border-line rounded-2xl p-4 mb-4">
