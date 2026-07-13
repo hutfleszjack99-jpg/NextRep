@@ -309,12 +309,30 @@ function WorkoutInner() {
 
   const setBodyweight = async (v: string) => {
     if (!workout) return;
-    const num = v === "" ? null : Number(v);
-    setWorkout({ ...workout, bodyweight: (isNaN(num as any) ? null : num) as any });
-    await supabase
-      .from("workouts")
-      .update({ bodyweight: isNaN(num as any) ? null : num })
-      .eq("id", workout.id);
+    const parsed = v === "" ? null : parseFloat(v);
+    const num = parsed == null || isNaN(parsed) ? null : parsed;
+    setWorkout({ ...workout, bodyweight: num as any });
+
+    // keep the workout record for backwards compatibility
+    await supabase.from("workouts").update({ bodyweight: num }).eq("id", workout.id);
+
+    // and write to the shared bodyweight table, so logging it here or on the
+    // Log page is the same thing. Keyed by the workout's date.
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id;
+    if (!uid) return;
+    const d = new Date(workout.started_at);
+    const entry_date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate()
+    ).padStart(2, "0")}`;
+
+    if (num == null) {
+      await supabase.from("bodyweight_entries").delete().eq("entry_date", entry_date);
+    } else {
+      await supabase
+        .from("bodyweight_entries")
+        .upsert({ user_id: uid, entry_date, weight: num }, { onConflict: "user_id,entry_date" });
+    }
   };
 
   const finish = async () => {

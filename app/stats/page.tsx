@@ -69,16 +69,24 @@ function StatsInner() {
           durTotal += dur;
           durCount += 1;
         }
-        if (w.bodyweight != null) {
-          bodyweights.push({
-            date: new Date(w.started_at).toLocaleDateString(undefined, {
-              month: "short",
-              day: "numeric",
-            }),
-            bw: Number(w.bodyweight),
-          });
-        }
       }
+
+      // Bodyweight comes from its own table now, so entries logged on rest days
+      // show up too, not just weights recorded during a workout.
+      const { data: bwRows } = await supabase
+        .from("bodyweight_entries")
+        .select("entry_date, weight")
+        .order("entry_date", { ascending: true });
+      for (const b of (bwRows as any[]) || []) {
+        bodyweights.push({
+          date: new Date(b.entry_date + "T00:00:00").toLocaleDateString(undefined, {
+            month: "short",
+            day: "numeric",
+          }),
+          bw: Number(b.weight),
+        });
+      }
+
       setOverall({
         workouts: rows.length,
         avgDurationMs: durCount ? durTotal / durCount : 0,

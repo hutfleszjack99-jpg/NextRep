@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Shell from "@/components/Shell";
+import BodyweightCard from "@/components/BodyweightCard";
 import SwipeToDelete from "@/components/SwipeToDelete";
 import { supabase } from "@/lib/supabaseClient";
 import { fmtDuration, sessionDurationMs } from "@/lib/data";
@@ -120,6 +121,8 @@ function LogInner() {
   return (
     <div>
       <h1 className="text-3xl font-extrabold mb-4">Log</h1>
+
+      <BodyweightCard />
 
       {groups.length === 0 && (
         <p className="text-dim text-center pt-12 leading-relaxed">

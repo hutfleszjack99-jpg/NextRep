@@ -68,6 +68,18 @@ create index if not exists idx_wex_workout on workout_exercises(workout_id);
 create index if not exists idx_wex_rex on workout_exercises(routine_exercise_id);
 create index if not exists idx_workouts_user on workouts(user_id, started_at desc);
 
+create table if not exists bodyweight_entries (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users on delete cascade,
+  entry_date date not null,
+  weight numeric not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, entry_date)
+);
+
+create index if not exists idx_bw_user_date
+  on bodyweight_entries(user_id, entry_date desc);
+
 -- Row level security: each user only sees their own rows.
 alter table user_settings enable row level security;
 alter table custom_exercises enable row level security;
@@ -76,6 +88,7 @@ alter table routine_exercises enable row level security;
 alter table workouts enable row level security;
 alter table workout_exercises enable row level security;
 alter table sets enable row level security;
+alter table bodyweight_entries enable row level security;
 
 create policy "own settings" on user_settings for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
@@ -90,4 +103,6 @@ create policy "own workouts" on workouts for all
 create policy "own workout exercises" on workout_exercises for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "own sets" on sets for all
+  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own bodyweight" on bodyweight_entries for all
   using (auth.uid() = user_id) with check (auth.uid() = user_id);
