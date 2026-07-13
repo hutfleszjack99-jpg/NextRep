@@ -43,6 +43,23 @@ function WorkoutInner() {
   // raw text being typed, keyed "setId:weight" / "setId:reps", so decimals like "8." survive
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const noteTimers = useRef<Record<string, any>>({});
+  const nextSetRef = useRef<HTMLDivElement | null>(null);
+  const hasScrolled = useRef(false);
+
+  // On open, jump to the first set that has no reps yet, so you land where you left off.
+  useEffect(() => {
+    if (hasScrolled.current) return;
+    if (!exs.length) return;
+    const anyLogged = exs.some((e) => e.sets.some((s) => s.reps != null));
+    if (!anyLogged) return; // fresh workout, stay at the top
+    const t = setTimeout(() => {
+      if (nextSetRef.current) {
+        nextSetRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+        hasScrolled.current = true;
+      }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [exs]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -136,6 +153,16 @@ function WorkoutInner() {
     for (const [rexId, sessions] of history) if (sessions.length) m.set(rexId, sessions[0]);
     return m;
   }, [history]);
+
+  // The first set (in order) that still has no reps. That's where you left off.
+  const nextSet = useMemo(() => {
+    for (let i = 0; i < exs.length; i++) {
+      for (let j = 0; j < exs[i].sets.length; j++) {
+        if (exs[i].sets[j].reps == null) return { exIdx: i, setIdx: j };
+      }
+    }
+    return null; // everything is logged
+  }, [exs]);
 
   // ---- mutations ----
   const patchSet = (exIdx: number, setIdx: number, patch: Partial<SetRow>) => {
@@ -412,10 +439,14 @@ function WorkoutInner() {
               const isFirstPR = !pr && s.weight != null && s.reps != null && s.completed_at;
               const showTimerHere =
                 restTimer && restTimer.exIdx === exIdx && restTimer.afterSetIdx === setIdx;
+              const isNextSet =
+                nextSet && nextSet.exIdx === exIdx && nextSet.setIdx === setIdx;
               return (
-                <div key={s.id}>
+                <div key={s.id} ref={isNextSet ? nextSetRef : undefined}>
                 <div
-                  className="grid grid-cols-[28px_1fr_1fr_1.2fr_28px] gap-2 items-center mb-2"
+                  className={`grid grid-cols-[28px_1fr_1fr_1.2fr_28px] gap-2 items-center mb-2 rounded-lg ${
+                    isNextSet ? "ring-1 ring-accent/40 bg-accent/5 px-1 py-1 -mx-1" : ""
+                  }`}
                 >
                   <button
                     onClick={() => toggleDone(exIdx, setIdx)}

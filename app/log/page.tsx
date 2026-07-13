@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Shell from "@/components/Shell";
 import SwipeToDelete from "@/components/SwipeToDelete";
@@ -27,7 +26,6 @@ export default function LogPage() {
 function LogInner() {
   const router = useRouter();
   const [entries, setEntries] = useState<LogEntry[] | null>(null);
-  const [activeWorkout, setActiveWorkout] = useState<{ id: string; routine_name: string } | null>(null);
 
   const deleteWorkout = async (id: string) => {
     if (!confirm("Delete this workout? This removes it from your log and stats permanently.")) return;
@@ -41,13 +39,33 @@ function LogInner() {
 
   useEffect(() => {
     (async () => {
+      // If a workout is currently in progress, jump straight back into it.
+      // A workout that has gone quiet for over an hour is handled by
+      // StaleWorkoutPrompt instead, so we leave those alone here.
       const { data: unfinished } = await supabase
         .from("workouts")
-        .select("id, routine_name")
+        .select("id, routine_name, started_at, workout_exercises(sets(completed_at))")
         .is("finished_at", null)
         .order("started_at", { ascending: false })
         .limit(1);
-      if (unfinished && unfinished.length) setActiveWorkout(unfinished[0] as any);
+
+      const open = (unfinished as any[])?.[0];
+      if (open) {
+        let last: string | null = null;
+        for (const e of open.workout_exercises || []) {
+          for (const s of e.sets || []) {
+            if (s.completed_at && (!last || s.completed_at > last)) last = s.completed_at;
+          }
+        }
+        const quietSince = last
+          ? new Date(last).getTime()
+          : new Date(open.started_at).getTime();
+        const idleMs = Date.now() - quietSince;
+        if (idleMs < 60 * 60 * 1000) {
+          router.replace(`/workout/${open.id}`);
+          return; // don't bother loading the log, we're leaving
+        }
+      }
 
       const { data } = await supabase
         .from("workouts")
@@ -102,15 +120,6 @@ function LogInner() {
   return (
     <div>
       <h1 className="text-3xl font-extrabold mb-4">Log</h1>
-
-      {activeWorkout && (
-        <Link
-          href={`/workout/${activeWorkout.id}`}
-          className="block bg-accent text-accentText font-bold rounded-xl px-4 py-3 mb-5 text-center"
-        >
-          Resume workout: {activeWorkout.routine_name}
-        </Link>
-      )}
 
       {groups.length === 0 && (
         <p className="text-dim text-center pt-12 leading-relaxed">
