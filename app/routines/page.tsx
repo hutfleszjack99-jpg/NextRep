@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Shell from "@/components/Shell";
 import BodyweightCard from "@/components/BodyweightCard";
+import { ListSkeleton } from "@/components/Skeletons";
 import { supabase } from "@/lib/supabaseClient";
 import type { Routine } from "@/lib/types";
 
@@ -93,7 +94,7 @@ function RoutinesInner() {
       )}
 
       {routines === null ? (
-        <p className="text-dim text-center pt-12">Loading…</p>
+        <ListSkeleton title={false} />
       ) : routines.length === 0 && !creating ? (
         <p className="text-dim text-center pt-12 leading-relaxed">
           No routines yet. Tap + to build your first one.

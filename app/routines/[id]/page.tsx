@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Shell from "@/components/Shell";
+import { ListSkeleton } from "@/components/Skeletons";
 import ExercisePicker from "@/components/ExercisePicker";
 import { supabase } from "@/lib/supabaseClient";
 import type { Routine, RoutineExercise } from "@/lib/types";
@@ -192,7 +193,7 @@ function RoutineDetail() {
     router.push(`/workout/${w.id}`);
   };
 
-  if (!routine) return <p className="text-dim text-center pt-16">Loading…</p>;
+  if (!routine) return <ListSkeleton />;
 
   return (
     <div>

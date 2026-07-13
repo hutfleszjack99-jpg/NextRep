@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Shell from "@/components/Shell";
+import { LogSkeleton } from "@/components/Skeletons";
 import SwipeToDelete from "@/components/SwipeToDelete";
 import { supabase } from "@/lib/supabaseClient";
 import { fmtDuration, sessionDurationMs } from "@/lib/data";
@@ -102,7 +103,7 @@ function LogInner() {
     })();
   }, []);
 
-  if (entries === null) return <p className="text-dim text-center pt-16">Loading…</p>;
+  if (entries === null) return <LogSkeleton />;
 
   // group by month
   const groups: { label: string; items: LogEntry[] }[] = [];

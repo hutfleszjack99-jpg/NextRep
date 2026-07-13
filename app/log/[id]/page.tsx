@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Shell from "@/components/Shell";
+import { DetailSkeleton } from "@/components/Skeletons";
 import { supabase } from "@/lib/supabaseClient";
 import { fmtDuration, sessionDurationMs } from "@/lib/data";
 
@@ -168,7 +169,7 @@ function LogDetail() {
     await load();
   };
 
-  if (loading) return <p className="text-dim text-center pt-16">Loading…</p>;
+  if (loading) return <DetailSkeleton />;
   if (!meta) return <p className="text-dim text-center pt-16">Workout not found.</p>;
 
   const d = new Date(meta.started_at);

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import type { Session } from "@supabase/supabase-js";
+import Splash from "./Splash";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -17,7 +18,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (!ready)
-    return <div className="min-h-screen flex items-center justify-center text-dim">Loading…</div>;
+    return <Splash />;
   if (!session) return <Login />;
   return <>{children}</>;
 }

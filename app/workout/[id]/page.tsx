@@ -11,6 +11,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import Shell from "@/components/Shell";
+import { WorkoutSkeleton } from "@/components/Skeletons";
 import PlateCalculator from "@/components/PlateCalculator";
 import RestTimerBar from "@/components/RestTimerBar";
 import { supabase } from "@/lib/supabaseClient";
@@ -367,7 +368,7 @@ function WorkoutInner() {
     router.push("/log");
   };
 
-  if (!workout) return <p className="text-dim text-center pt-16">Loading…</p>;
+  if (!workout) return <WorkoutSkeleton />;
 
   const elapsed = (now - new Date(workout.started_at).getTime()) / 1000;
 

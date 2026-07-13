@@ -10,6 +10,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import Shell from "@/components/Shell";
+import { StatsSkeleton } from "@/components/Skeletons";
 import { supabase } from "@/lib/supabaseClient";
 import { loadHistory, computePRs, fmtDuration, sessionDurationMs } from "@/lib/data";
 import type { HistorySession, PR } from "@/lib/types";
@@ -132,7 +133,7 @@ function StatsInner() {
     [sessions]
   );
 
-  if (!overall) return <p className="text-dim text-center pt-16">Loading…</p>;
+  if (!overall) return <StatsSkeleton />;
 
   return (
     <div>
