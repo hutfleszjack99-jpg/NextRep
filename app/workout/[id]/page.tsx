@@ -567,6 +567,7 @@ function WorkoutInner() {
       {plateTarget && (
         <PlateCalculator
           barWeight={settings.bar_weight}
+          exerciseKey={exs[plateTarget.exIdx]?.routine_exercise_id || undefined}
           onClose={() => setPlateTarget(null)}
           onApply={async (total) => {
             const { exIdx, setIdx } = plateTarget;

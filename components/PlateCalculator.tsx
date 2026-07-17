@@ -1,19 +1,40 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const DENOMS = [45, 35, 25, 10, 5, 2.5];
 
 export default function PlateCalculator({
   barWeight,
+  exerciseKey,
   onApply,
   onClose,
 }: {
   barWeight: number;
+  exerciseKey?: string; // routine_exercise_id, so the bar choice is remembered per exercise
   onApply: (total: number) => void;
   onClose: () => void;
 }) {
   const [counts, setCounts] = useState<Record<number, number>>({});
   const [includeBar, setIncludeBar] = useState(true);
+
+  // Load this exercise's saved bar preference on open. Defaults to true (bar included)
+  // when we've never seen this exercise before.
+  useEffect(() => {
+    if (!exerciseKey) return;
+    try {
+      const saved = localStorage.getItem(`plateBar:${exerciseKey}`);
+      if (saved !== null) setIncludeBar(saved === "1");
+    } catch {}
+  }, [exerciseKey]);
+
+  const setBar = (v: boolean) => {
+    setIncludeBar(v);
+    if (exerciseKey) {
+      try {
+        localStorage.setItem(`plateBar:${exerciseKey}`, v ? "1" : "0");
+      } catch {}
+    }
+  };
 
   const total = useMemo(() => {
     const plates = DENOMS.reduce((s, d) => s + d * (counts[d] || 0), 0);
@@ -34,7 +55,7 @@ export default function PlateCalculator({
           <input
             type="checkbox"
             checked={includeBar}
-            onChange={(e) => setIncludeBar(e.target.checked)}
+            onChange={(e) => setBar(e.target.checked)}
             className="accent-[#C9C0F5]"
           />
           Include bar ({barWeight} lb)
