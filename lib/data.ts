@@ -67,6 +67,113 @@ export function overallPR(sessions: HistorySession[]): PR | null {
   return best;
 }
 
+// The best set within a single session (highest weight, ties broken by reps).
+// Same definition of "best" the app uses everywhere else.
+function bestSetOf(sess: HistorySession): { weight: number; reps: number } | null {
+  let best: { weight: number; reps: number } | null = null;
+  for (const s of sess.sets) {
+    if (s.weight == null || s.reps == null) continue;
+    if (!best || s.weight > best.weight || (s.weight === best.weight && s.reps > best.reps)) {
+      best = { weight: s.weight, reps: s.reps };
+    }
+  }
+  return best;
+}
+
+const betterThan = (
+  a: { weight: number; reps: number },
+  b: { weight: number; reps: number }
+) => a.weight > b.weight || (a.weight === b.weight && a.reps > b.reps);
+
+export type Mover = {
+  routineExerciseId: string;
+  name: string; // "Routine · Exercise"
+  exerciseName: string;
+  current: { weight: number; reps: number };
+  status: "stalled" | "progressing";
+  // stalled:
+  sessionsStalled?: number; // sessions since the last improvement
+  lastGain?: string; // ISO date of the last time it improved
+  // progressing:
+  prev?: { weight: number; reps: number }; // the peak before the current one
+  lbPerMonth?: number; // rough rate of weight gain
+};
+
+// Classify every exercise as stalled or progressing based on best-set-per-session.
+// Needs at least `minSessions` sessions of a lift before it says anything.
+export function computeMovers(
+  histories: { routineExerciseId: string; name: string; exerciseName: string; sessions: HistorySession[] }[],
+  opts: { stallThreshold?: number; minSessions?: number } = {}
+): { stalled: Mover[]; progressing: Mover[] } {
+  const stallThreshold = opts.stallThreshold ?? 3;
+  const minSessions = opts.minSessions ?? 3;
+  const stalled: Mover[] = [];
+  const progressing: Mover[] = [];
+
+  for (const h of histories) {
+    // oldest -> newest, only sessions that actually had a logged set
+    const ordered = [...h.sessions]
+      .sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime())
+      .map((s) => ({ session: s, best: bestSetOf(s) }))
+      .filter((x) => x.best !== null) as {
+      session: HistorySession;
+      best: { weight: number; reps: number };
+    }[];
+
+    if (ordered.length < minSessions) continue;
+
+    const current = ordered[ordered.length - 1].best;
+
+    // walk backward to find the running peak and when it was last beaten
+    let peak = ordered[0].best;
+    let lastGainIdx = 0;
+    for (let i = 1; i < ordered.length; i++) {
+      if (betterThan(ordered[i].best, peak)) {
+        peak = ordered[i].best;
+        lastGainIdx = i;
+      }
+    }
+
+    const sessionsSinceGain = ordered.length - 1 - lastGainIdx;
+
+    if (sessionsSinceGain >= stallThreshold) {
+      stalled.push({
+        routineExerciseId: h.routineExerciseId,
+        name: h.name,
+        exerciseName: h.exerciseName,
+        current,
+        status: "stalled",
+        sessionsStalled: sessionsSinceGain,
+        lastGain: ordered[lastGainIdx].session.started_at,
+      });
+    } else {
+      // progressing: compare current peak to the peak before it
+      let prevPeak: { weight: number; reps: number } | null = null;
+      for (let i = 0; i < lastGainIdx; i++) {
+        if (!prevPeak || betterThan(ordered[i].best, prevPeak)) prevPeak = ordered[i].best;
+      }
+      const firstDate = new Date(ordered[0].session.started_at).getTime();
+      const lastDate = new Date(ordered[ordered.length - 1].session.started_at).getTime();
+      const months = Math.max((lastDate - firstDate) / (1000 * 60 * 60 * 24 * 30), 0.25);
+      const lbGain = current.weight - ordered[0].best.weight;
+      progressing.push({
+        routineExerciseId: h.routineExerciseId,
+        name: h.name,
+        exerciseName: h.exerciseName,
+        current,
+        status: "progressing",
+        prev: prevPeak ?? undefined,
+        lbPerMonth: lbGain > 0 ? lbGain / months : 0,
+      });
+    }
+  }
+
+  // worst stalls first (most sessions stuck), best movers first (fastest gain)
+  stalled.sort((a, b) => (b.sessionsStalled ?? 0) - (a.sessionsStalled ?? 0));
+  progressing.sort((a, b) => (b.lbPerMonth ?? 0) - (a.lbPerMonth ?? 0));
+  return { stalled, progressing };
+}
+
 export function fmtClock(totalSeconds: number): string {
   const s = Math.max(0, Math.floor(totalSeconds));
   const m = Math.floor(s / 60);

@@ -12,7 +12,8 @@ import {
 import Shell from "@/components/Shell";
 import { StatsSkeleton } from "@/components/Skeletons";
 import { supabase } from "@/lib/supabaseClient";
-import { loadHistory, computePRs, fmtDuration, sessionDurationMs } from "@/lib/data";
+import { loadHistory, computePRs, computeMovers, fmtDuration, sessionDurationMs } from "@/lib/data";
+import type { Mover } from "@/lib/data";
 import type { HistorySession, PR } from "@/lib/types";
 
 export default function StatsPage() {
@@ -24,6 +25,13 @@ export default function StatsPage() {
 }
 
 type RexOption = { id: string; label: string };
+
+const fmtSet = (s: { weight: number; reps: number }) =>
+  `${s.weight} × ${s.reps}`;
+
+const fmtShort = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
 
 function StatsInner() {
   const [overall, setOverall] = useState<{
@@ -37,6 +45,7 @@ function StatsInner() {
   const [rexOptions, setRexOptions] = useState<RexOption[]>([]);
   const [selectedRex, setSelectedRex] = useState<string>("");
   const [sessions, setSessions] = useState<HistorySession[]>([]);
+  const [movers, setMovers] = useState<{ stalled: Mover[]; progressing: Mover[] } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -108,6 +117,24 @@ function StatsInner() {
       }));
       setRexOptions(opts);
       if (opts.length) setSelectedRex(opts[0].id);
+
+      // Load history for every exercise at once to find stalled vs progressing lifts.
+      if (opts.length) {
+        const allHist = await loadHistory(opts.map((o) => o.id), null);
+        const histories = opts.map((o) => {
+          const label = o.label;
+          const exerciseName = label.includes(" · ") ? label.split(" · ")[1] : label;
+          return {
+            routineExerciseId: o.id,
+            name: label,
+            exerciseName,
+            sessions: allHist.get(o.id) || [],
+          };
+        });
+        setMovers(computeMovers(histories, { stallThreshold: 3, minSessions: 3 }));
+      } else {
+        setMovers({ stalled: [], progressing: [] });
+      }
     })();
   }, []);
 
@@ -138,6 +165,78 @@ function StatsInner() {
   return (
     <div>
       <h1 className="text-3xl font-extrabold mb-4">Statistics</h1>
+
+      {movers && (movers.stalled.length > 0 || movers.progressing.length > 0) && (
+        <div className="mb-6">
+          {movers.stalled.length > 0 && (
+            <>
+              <div className="text-[10px] uppercase tracking-wider text-dim mb-2">
+                Needs attention
+              </div>
+              <div className="bg-card border border-line rounded-2xl overflow-hidden mb-4">
+                {movers.stalled.map((m, i) => (
+                  <div
+                    key={m.routineExerciseId}
+                    className={`p-3.5 ${i < movers.stalled.length - 1 ? "border-b border-line" : ""}`}
+                  >
+                    <div className="flex justify-between items-center gap-2 mb-1">
+                      <span className="font-semibold text-sm truncate">{m.exerciseName}</span>
+                      <span
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
+                        style={
+                          (m.sessionsStalled ?? 0) >= 4
+                            ? { background: "rgba(255,107,107,0.15)", color: "#FF6B6B" }
+                            : { background: "rgba(232,185,106,0.15)", color: "#E8B96A" }
+                        }
+                      >
+                        STALLED {m.sessionsStalled} {m.sessionsStalled === 1 ? "SESSION" : "SESSIONS"}
+                      </span>
+                    </div>
+                    <div className="text-xs text-dim font-mono">
+                      Stuck at {fmtSet(m.current)}
+                      {m.lastGain && ` · last gain ${fmtShort(m.lastGain)}`}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {movers.progressing.length > 0 && (
+            <>
+              <div className="text-[10px] uppercase tracking-wider text-dim mb-2">
+                Progressing well
+              </div>
+              <div className="bg-card border border-line rounded-2xl overflow-hidden">
+                {movers.progressing.map((m, i) => (
+                  <div
+                    key={m.routineExerciseId}
+                    className={`p-3.5 ${i < movers.progressing.length - 1 ? "border-b border-line" : ""}`}
+                  >
+                    <div className="flex justify-between items-center gap-2 mb-1">
+                      <span className="font-semibold text-sm truncate">{m.exerciseName}</span>
+                      {m.lbPerMonth != null && m.lbPerMonth > 0 && (
+                        <span className="text-xs font-bold text-accent2 font-mono whitespace-nowrap">
+                          +{Math.round(m.lbPerMonth)} lb/mo
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-dim font-mono">
+                      Now {fmtSet(m.current)}
+                      {m.prev && ` · up from ${m.prev.weight}`}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          <p className="text-[11px] text-dim/70 mt-3 leading-relaxed px-0.5">
+            A lift counts as stalled when your best set hasn&apos;t improved in 3+ sessions. Needs a
+            few logged sessions per exercise to show up.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 mb-5">
         <Stat label="Workouts" value={String(overall.workouts)} />
